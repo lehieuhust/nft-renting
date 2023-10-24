@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, CanonicalAddr, Uint128, Binary, Coin, CustomMsg, Timestamp};
+use cosmwasm_std::{Addr, CanonicalAddr, Uint128};
 use cw721::{
     Cw721ReceiveMsg,Expiration,
 };
