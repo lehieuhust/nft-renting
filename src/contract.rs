@@ -4,24 +4,14 @@ use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response,
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use crate::handle::{delist_nft, edit_lend_order, handle_receive_cw721, rent_nft};
+use crate::msg::{ContractInfo, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query;
-use crate::state::{ContractInfo, CONTRACT_INFO};
-// use cw_utils::nonpayable;
-use crate::handle::handle_receive_cw721;
+use crate::state::{CONTRACT_INFO, CW721_ADDR};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:nft-renting";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
-
-// 1 day in seconds
-const ONE_DAY: u64 = 86_400;
-
-// 1 minute in seconds
-const ONE_MINUTE: u64 = 60;
-
-// 1 year in seconds
-const ONE_YEAR: u64 = 31_536_000;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -40,9 +30,11 @@ pub fn instantiate(
         } else {
             creator
         },
+        cw721_contract: msg.cw721_contract,
     };
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     CONTRACT_INFO.save(deps.storage, &config)?;
+    CW721_ADDR.save(deps.storage, &config.cw721_contract)?;
 
     Ok(Response::new()
         .add_attribute("method", "instantiate")
@@ -60,10 +52,20 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::ReceiveNft(msg) => handle_receive_cw721(deps, env, info, msg),
-        ExecuteMsg::RentNft { token_id, lender } => todo!(),
-        ExecuteMsg::RedeemNft { token_id } => todo!(),
-        ExecuteMsg::EditLendingOrder { token_id } => todo!(),
-        ExecuteMsg::DelistNft { token_id } => todo!(),
+        ExecuteMsg::RentNft {
+            token_id,
+            cw721_contract,
+        } => rent_nft(deps, env, info, token_id, cw721_contract),
+        ExecuteMsg::EditLendingOrder {
+            token_id,
+            cw721_contract,
+            lend_amount,
+            lend_time,
+        } => edit_lend_order(deps, info, token_id, lend_amount, lend_time, cw721_contract),
+        ExecuteMsg::DelistNft {
+            token_id,
+            cw721_contract,
+        } => delist_nft(deps, env, info, token_id, cw721_contract),
     }
 }
 
@@ -71,11 +73,13 @@ pub fn execute(
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::ContractInfo {} => to_binary(&query::config(deps)?),
+        QueryMsg::LendOrder { token_id, cw721_contract } => to_binary(&query::query_lend_order(deps, token_id, cw721_contract)?),
+        QueryMsg::RentOrder { token_id, cw721_contract } => to_binary(&query::query_rent_order(deps, token_id, cw721_contract)?),
     }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     Ok(Response::default())
 }
 
