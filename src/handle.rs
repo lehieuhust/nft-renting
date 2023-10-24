@@ -166,6 +166,7 @@ pub fn delist_nft(
             expiration.is_expired(&env.block),
             ContractError::RentedNFT {}
         );
+        RENTED_ITEMS.remove(deps.storage, &lend_id);
     }
 
     LENDED_ITEMS.remove(deps.storage, &lend_id);
