@@ -99,6 +99,10 @@ pub fn rent_nft(
     // Check if lend ID exists
     let lended_item = LENDED_ITEMS.load(deps.storage, &lend_id)?;
 
+    if lended_item.lender == info.sender.as_str() {
+        return Err(ContractError::RenterCannotBeLender {});
+    }
+
     // Add lock time to current block time
     let expiration_time = env.block.time.plus_seconds(lended_item.lend_time);
 

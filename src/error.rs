@@ -18,6 +18,9 @@ pub enum ContractError {
     #[error("PriceNotSet")]
     PriceNotSet {},
 
+    #[error("RenterCannotBeLender")]
+    RenterCannotBeLender {},
+
     #[error("LendedNFT")]
     LendedNFT {},
 
